@@ -420,6 +420,7 @@ class LLM(llm.LLM):
         temperature: float | None = None,
         n: int | None = 1,
         parallel_tool_calls: bool | None = None,
+        stream: bool = True
     ) -> "LLMStream":
         opts: dict[str, Any] = dict()
         if fnc_ctx and len(fnc_ctx.ai_functions) > 0:
@@ -442,10 +443,13 @@ class LLM(llm.LLM):
             model=self._opts.model,
             n=n,
             temperature=temperature,
-            stream=True,
+            stream=stream,
             user=user,
             **opts,
         )
+        
+        if not stream:
+            return cmp
 
         return LLMStream(oai_stream=cmp, chat_ctx=chat_ctx, fnc_ctx=fnc_ctx)
 
