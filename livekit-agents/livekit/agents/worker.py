@@ -31,11 +31,11 @@ from urllib.parse import urljoin, urlparse
 import aiohttp
 import jwt
 import psutil
-from livekit import api
+from livekit import api, rtc
 from livekit.protocol import agent, models
 
 from . import http_server, ipc, utils
-from .exceptions import AssignmentTimeoutError
+from ._exceptions import AssignmentTimeoutError
 from .job import (
     JobAcceptArguments,
     JobContext,
@@ -185,6 +185,13 @@ class WorkerOptions:
     The HTTP server is used as a health check endpoint.
     """
 
+    def validate_config(self, devmode: bool):
+        load_threshold = _WorkerEnvOption.getvalue(self.load_threshold, devmode)
+        if load_threshold > 1 and not devmode:
+            logger.warning(
+                f"load_threshold in prod env must be less than 1, current value: {load_threshold}"
+            )
+
 
 EventTypes = Literal["worker_registered"]
 
@@ -258,7 +265,10 @@ class Worker(utils.EventEmitter[EventTypes]):
         if not self._closed:
             raise Exception("worker is already running")
 
-        logger.info("starting worker", extra={"version": __version__})
+        logger.info(
+            "starting worker",
+            extra={"version": __version__, "rtc-version": rtc.__version__},
+        )
 
         self._closed = False
         self._proc_pool.start()
@@ -588,7 +598,12 @@ class Worker(utils.EventEmitter[EventTypes]):
         self._id = reg.worker_id
         logger.info(
             "registered worker",
-            extra={"id": reg.worker_id, "server_info": reg.server_info},
+            extra={
+                "id": reg.worker_id,
+                "region": reg.server_info.region,
+                "protocol": reg.server_info.protocol,
+                "node_id": reg.server_info.node_id,
+            },
         )
         self.emit("worker_registered", reg.worker_id, reg.server_info)
 
@@ -652,9 +667,11 @@ class Worker(utils.EventEmitter[EventTypes]):
         logger.info(
             "received job request",
             extra={
-                "job_request": msg.job,
-                "resuming": msg.resuming,
+                "job_id": msg.job.id,
+                "dispatch_id": msg.job.dispatch_id,
+                "room_name": msg.job.room.name,
                 "agent_name": self._opts.agent_name,
+                "resuming": msg.resuming,
             },
         )
 

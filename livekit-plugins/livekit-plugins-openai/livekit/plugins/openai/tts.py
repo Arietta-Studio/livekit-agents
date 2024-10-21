@@ -73,11 +73,11 @@ class TTS(tts.TTS):
             api_key=api_key,
             base_url=base_url,
             http_client=httpx.AsyncClient(
-                timeout=5.0,
+                timeout=httpx.Timeout(connect=15.0, read=5.0, write=5.0, pool=5.0),
                 follow_redirects=True,
                 limits=httpx.Limits(
-                    max_connections=1000,
-                    max_keepalive_connections=100,
+                    max_connections=50,
+                    max_keepalive_connections=50,
                     keepalive_expiry=120,
                 ),
             ),
@@ -88,6 +88,13 @@ class TTS(tts.TTS):
             voice=voice,
             speed=speed,
         )
+
+    def update_options(
+        self, *, model: TTSModels | None, voice: TTSVoices | None, speed: float | None
+    ) -> None:
+        self._opts.model = model or self._opts.model
+        self._opts.voice = voice or self._opts.voice
+        self._opts.speed = speed or self._opts.speed
 
     @staticmethod
     def create_azure_client(

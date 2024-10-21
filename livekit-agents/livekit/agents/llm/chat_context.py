@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any, Literal, Union
 
 from livekit import rtc
 
@@ -35,10 +35,19 @@ class ChatImage:
 
 
 @dataclass
+class ChatAudio:
+    frame: rtc.AudioFrame | list[rtc.AudioFrame]
+
+
+ChatContent = Union[str, ChatImage, ChatAudio]
+
+
+@dataclass
 class ChatMessage:
     role: ChatRole
+    id: str | None = None  # used by the OAI realtime API
     name: str | None = None
-    content: str | list[str | ChatImage] | None = None
+    content: ChatContent | list[ChatContent] | None = None
     tool_calls: list[function_context.FunctionCallInfo] | None = None
     tool_call_id: str | None = None
     tool_exception: Exception | None = None
@@ -70,8 +79,10 @@ class ChatMessage:
     @staticmethod
     def create_tool_calls(
         called_functions: list[function_context.FunctionCallInfo],
+        *,
+        text: str = "",
     ) -> "ChatMessage":
-        return ChatMessage(role="assistant", tool_calls=called_functions)
+        return ChatMessage(role="assistant", tool_calls=called_functions, content=text)
 
     @staticmethod
     def create(
@@ -80,7 +91,7 @@ class ChatMessage:
         if len(images) == 0:
             return ChatMessage(role=role, content=text)
         else:
-            content: list[str | ChatImage] = []
+            content: list[ChatContent] = []
             if text:
                 content.append(text)
 

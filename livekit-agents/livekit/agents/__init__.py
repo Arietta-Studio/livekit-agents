@@ -12,10 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import ipc, llm, stt, tokenize, transcription, tts, utils, vad, voice_assistant
+from . import (
+    cli,
+    ipc,
+    llm,
+    multimodal,
+    pipeline,
+    stt,
+    tokenize,
+    transcription,
+    tts,
+    utils,
+    vad,
+    voice_assistant,
+)
+from ._constants import ATTRIBUTE_AGENT_STATE
+from ._exceptions import AssignmentTimeoutError
+from ._types import AgentState
 from .job import AutoSubscribe, JobContext, JobExecutorType, JobProcess, JobRequest
 from .plugin import Plugin
-from .proto import ATTR_AGENT_STATE, AgentState
 from .version import __version__
 from .worker import Worker, WorkerOptions, WorkerPermissions, WorkerType
 
@@ -31,7 +46,6 @@ __all__ = [
     "JobExecutorType",
     "AutoSubscribe",
     "AgentState",
-    "ATTR_AGENT_STATE",
     "Plugin",
     "ipc",
     "stt",
@@ -40,6 +54,21 @@ __all__ = [
     "tts",
     "tokenize",
     "llm",
-    "voice_assistant",
     "transcription",
+    "pipeline",
+    "multimodal",
+    "voice_assistant",
+    "cli",
+    "AssignmentTimeoutError",
+    "ATTRIBUTE_AGENT_STATE",
+    "AgentState",
 ]
+
+# Cleanup docs of unexported modules
+_module = dir()
+NOT_IN_ALL = [m for m in _module if m not in __all__]
+
+__pdoc__ = {}
+
+for n in NOT_IN_ALL:
+    __pdoc__[n] = False

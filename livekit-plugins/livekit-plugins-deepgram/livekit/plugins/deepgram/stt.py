@@ -50,6 +50,7 @@ class STTOptions:
     sample_rate: int
     num_channels: int
     keywords: list[Tuple[str, float]]
+    profanity_filter: bool
 
 
 class STT(stt.STT):
@@ -62,10 +63,12 @@ class STT(stt.STT):
         interim_results: bool = True,
         punctuate: bool = True,
         smart_format: bool = True,
+        sample_rate: int = 16000,
         no_delay: bool = True,
         endpointing_ms: int = 25,
         filler_words: bool = False,
         keywords: list[Tuple[str, float]] = [],
+        profanity_filter: bool = False,
         api_key: str | None = None,
         http_session: aiohttp.ClientSession | None = None,
     ) -> None:
@@ -114,9 +117,10 @@ class STT(stt.STT):
             no_delay=no_delay,
             endpointing_ms=endpointing_ms,
             filler_words=filler_words,
-            sample_rate=48000,
+            sample_rate=sample_rate,
             num_channels=1,
             keywords=keywords,
+            profanity_filter=profanity_filter,
         )
         self._session = http_session
 
@@ -137,6 +141,7 @@ class STT(stt.STT):
             "detect_language": config.detect_language,
             "smart_format": config.smart_format,
             "keywords": self._opts.keywords,
+            "profanity_filter": config.profanity_filter,
         }
         if config.language:
             recognize_config["language"] = config.language
@@ -191,7 +196,7 @@ class SpeechStream(stt.SpeechStream):
         http_session: aiohttp.ClientSession,
         max_retry: int = 32,
     ) -> None:
-        super().__init__()
+        super().__init__(sample_rate=opts.sample_rate)
 
         if opts.detect_language and opts.language is None:
             raise ValueError("language detection is not supported in streaming mode")
@@ -231,6 +236,7 @@ class SpeechStream(stt.SpeechStream):
                     else self._opts.endpointing_ms,
                     "filler_words": self._opts.filler_words,
                     "keywords": self._opts.keywords,
+                    "profanity_filter": self._opts.profanity_filter,
                 }
 
                 if self._opts.language:

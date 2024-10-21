@@ -234,6 +234,7 @@ def _run_dev(
 
 def run_worker(args: proto.CliArgs) -> None:
     setup_logging(args.log_level, args.devmode)
+    args.opts.validate_config(args.devmode)
 
     loop = asyncio.get_event_loop()
     worker = Worker(args.opts, devmode=args.devmode, loop=loop)
@@ -242,8 +243,8 @@ def run_worker(args: proto.CliArgs) -> None:
     loop.slow_callback_duration = 0.1  # 100ms
     utils.aio.debug.hook_slow_callbacks(2)
 
-    if args.room:
-        # directly connect to a specific roomj
+    if args.room and args.reload_count == 0:
+        # directly connect to a specific room
         @worker.once("worker_registered")
         def _connect_on_register(worker_id: str, server_info: models.ServerInfo):
             logger.info("connecting to room %s", args.room)
@@ -270,9 +271,7 @@ def run_worker(args: proto.CliArgs) -> None:
     if args.watch:
         from .watcher import WatchClient
 
-        assert args.mp_cch is not None
-
-        watch_client = WatchClient(worker, args.mp_cch, loop=loop)
+        watch_client = WatchClient(worker, args, loop=loop)
         watch_client.start()
 
     try:
